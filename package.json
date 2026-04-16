@@ -27,6 +27,8 @@
   },
   "private": true,
   "devDependencies": {
-    "babel-preset-expo": "^55.0.17"
+    "@expo/metro-runtime": "^55.0.9",
+    "babel-preset-expo": "^55.0.17",
+    "expo-updates": "^55.0.20"
   }
 }

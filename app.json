@@ -1,12 +1,13 @@
 {
   "expo": {
-    "name": "3000",
-    "slug": "3000",
+    "name": "Dinner-Selector",
+    "slug": "Dinner-Selector",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false, 
+    "newArchEnabled": false,
+    "platforms": ["ios", "android"], 
     "ios": {
       "supportsTablet": true
     },
@@ -20,6 +21,18 @@
     "plugins": [
       "expo-router"
     ],
-    "scheme": "dinner-app"
+    "scheme": "dinner-app",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cf2d069f-2ac1-42ae-b230-922399df58c5"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/cf2d069f-2ac1-42ae-b230-922399df58c5"
+    }
   }
 }
