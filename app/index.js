@@ -11,6 +11,17 @@ import Card from './Card';
 import { MaterialIcons } from '@expo/vector-icons';
 
 const AnimatedCircle = Animated.createAnimatedComponent(SvgCircle);
+const darkMapStyle = [
+  { "elementType": "geometry", "stylers": [{ "color": "#242f3e" }] },
+  { "elementType": "labels.text.fill", "stylers": [{ "color": "#746855" }] },
+  { "elementType": "labels.text.stroke", "stylers": [{ "color": "#242f3e" }] },
+  { "featureType": "administrative.locality", "elementType": "labels.text.fill", "stylers": [{ "color": "#d59563" }] },
+  { "featureType": "poi", "elementType": "labels.text.fill", "stylers": [{ "color": "#d59563" }] },
+  { "featureType": "poi.park", "elementType": "geometry", "stylers": [{ "color": "#263c3f" }] },
+  { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#38414e" }] },
+  { "featureType": "road", "elementType": "geometry.stroke", "stylers": [{ "color": "#212a37" }] },
+  { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#17263c" }] }
+];
 
 export default function MapScreen() {
 
@@ -205,7 +216,12 @@ export default function MapScreen() {
           style={styles.map}
           showsUserLocation={true}
           region={region}
+        
+
+          customMapStyle={isDark ? darkMapStyle : []}
+          userInterfaceStyle={isDark ? 'dark' : 'light'}
         >
+
           {location && (
             <Circle
               center={{
@@ -274,51 +290,71 @@ export default function MapScreen() {
 
         <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
 
-          <View style={[styles.searchBox, { backgroundColor: '#fff0de' }]}>
+          <View style={[styles.searchBox, {backgroundColor: theme.searchBar }]}>
             <TextInput
               placeholder="Search"
-              placeholderTextColor="#000"
-              value={searchText}
+              placeholderTextColor={isDark ? "#AAA" : "#6B4F4F"}
               onChangeText={setSearchText}
-              style={styles.searchInput}
+
+              style={[styles.searchInput, { color: theme.text }]} // ⬅️ 輸入文字顏色
+              // style={styles.searchInput}
             />
 
-            {searchResults.map((item, i) => (
-              <TouchableOpacity
-                key={i}
-                style={styles.resultItem}
-                onPress={async () => {
-                  const details = await fetchDetails(item.place_id);
+{searchResults.map((item, i) => (
+  <TouchableOpacity
+    key={i}
+    // ⭐ 背景色隨模式變換，並加上底線區隔
+    style={[
+      styles.resultItem, 
+      { 
+        backgroundColor: theme.searchBar, 
+        borderBottomColor: isDark ? '#444' : '#EEE' 
+      }
+    ]}
+    onPress={async () => {
+      // 1. 抓取餐廳詳細資訊 (營業時間等)
+      const details = await fetchDetails(item.place_id);
 
-                  const restaurantData = {
-                    ...item,
-                    id: item.place_id,
-                    geometry: item.geometry,
-                  };
+      const restaurantData = {
+        ...item,
+        id: item.place_id,
+        geometry: item.geometry,
+      };
 
-                  setSelectedRestaurant(restaurantData);
+      // 2. 設定選中的餐廳資料
+      setSelectedRestaurant(restaurantData);
 
-                  setFinalRestaurant({
-                    ...restaurantData,
-                    details,
-                  });
+      // 3. 設定最後要顯示在 Card 上的完整資料
+      setFinalRestaurant({
+        ...restaurantData,
+        details,
+      });
 
-                  setSearchResults([]);
-                  setSearchText('');
-                  Keyboard.dismiss();
+      // 4. 清除搜尋狀態並收起鍵盤
+      setSearchResults([]);
+      setSearchText('');
+      Keyboard.dismiss();
 
-                  mapRef.current?.animateToRegion({
-                    latitude: item.geometry.location.lat,
-                    longitude: item.geometry.location.lng,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                  }, 500);
-                }}
-              >
-                <Text>{item.name}</Text>
-                <Text style={{ color: '#888' }}>{item.formatted_address}</Text>
-              </TouchableOpacity>
-            ))}
+      // 5. 地圖平滑移動到目標餐廳
+      mapRef.current?.animateToRegion({
+        latitude: item.geometry.location.lat,
+        longitude: item.geometry.location.lng,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      }, 500);
+    }}
+  >
+    {/* ⭐ 店名顏色：連動 theme.text */}
+    <Text style={{ color: theme.text, fontWeight: '600' }}>
+      {item.name}
+    </Text>
+    
+    {/* ⭐ 地址顏色：夜間模式稍微亮一點 (#BBB)，日間模式維持灰色 (#888) */}
+    <Text style={{ color: isDark ? '#BBB' : '#888', fontSize: 12, marginTop: 2 }}>
+      {item.formatted_address}
+    </Text>
+  </TouchableOpacity>
+))}
           </View>
 
 
@@ -399,6 +435,9 @@ export default function MapScreen() {
             </Animated.View>
           </View>
         </View>
+
+
+        
 
         <Card
           restaurant={finalRestaurant}

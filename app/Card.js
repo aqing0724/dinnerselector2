@@ -4,8 +4,11 @@ import AddComment from './addcomment';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Dimensions } from 'react-native';
+import { useContext } from 'react';
+import { ThemeContext } from './_layout';
 
 export default function Card({ restaurant, onClose }) {
+const { isDark, theme = {} } = useContext(ThemeContext) || {};
   const SCREEN_HEIGHT = Dimensions.get('window').height;
   const HALF_OPEN = SCREEN_HEIGHT * 0.5;
   const FULL_OPEN = 0;
@@ -101,11 +104,9 @@ export default function Card({ restaurant, onClose }) {
     <Animated.View
 
       pointerEvents={restaurant ? 'auto' : 'none'}
-      style={[
+   style={[
         styles.card,
-        {
-          transform: [{ translateY }]
-        }
+        { transform: [{ translateY }], backgroundColor: theme.bg } // ⭐ 修正點
       ]}
     >
       {showAddComment ? (
@@ -118,34 +119,63 @@ export default function Card({ restaurant, onClose }) {
             setSelectedReview(null);
           }}
 
+          // onSubmit={(data) => {
+          //   if (selectedReview) {
+          //     // ⭐ 編輯
+          //     const updated = reviews.map(r =>
+          //       r.id === selectedReview.id ? { ...r, ...data } : r
+          //     );
+
+          //     setReviews(updated);
+          //     saveReviews(updated);
+
+          //   } else {
+          //     const newReview = {
+          //       id: Date.now().toString(),
+          //       restaurantId: restaurant.id,
+          //       ...data,              // ⭐ 這行最重要（你漏掉了）
+          //       images: data.images || [], // ⭐ 防呆
+          //       date: new Date().toISOString().slice(0, 10).replace(/-/g, "/"),
+          //     };
+
+          //     const updatedReviews = [newReview, ...reviews];
+
+          //     setReviews(updatedReviews);
+          //     saveReviews(updatedReviews);
+          //   }
+
+          //   setShowAddComment(false);
+          //   setSelectedReview(null);
+          // }}
+
           onSubmit={(data) => {
-            if (selectedReview) {
-              // ⭐ 編輯
-              const updated = reviews.map(r =>
-                r.id === selectedReview.id ? { ...r, ...data } : r
-              );
+  if (selectedReview) {
+    // 編輯現有評論
+    const updated = reviews.map(r =>
+      r.id === selectedReview.id 
+        ? { ...r, ...data, restaurantName: restaurant.name } // ⭐ 確保編輯後店名還在
+        : r
+    );
+    setReviews(updated);
+    saveReviews(updated);
+  } else {
+    // 新增評論
+    const newReview = {
+      id: Date.now().toString(),
+      restaurantId: restaurant.id,
+      restaurantName: restaurant.name, // ⭐ 這裡最重要：直接從 Card 的 props 抓店名存進去
+      ...data,                         // 這會包含 addcomment 傳出來的 text, like, images
+      date: new Date().toISOString().slice(0, 10).replace(/-/g, "/"),
+    };
 
-              setReviews(updated);
-              saveReviews(updated);
+    const updatedReviews = [newReview, ...reviews];
+    setReviews(updatedReviews);
+    saveReviews(updatedReviews);
+  }
 
-            } else {
-              const newReview = {
-                id: Date.now().toString(),
-                restaurantId: restaurant.id,
-                ...data,              // ⭐ 這行最重要（你漏掉了）
-                images: data.images || [], // ⭐ 防呆
-                date: new Date().toISOString().slice(0, 10).replace(/-/g, "/"),
-              };
-
-              const updatedReviews = [newReview, ...reviews];
-
-              setReviews(updatedReviews);
-              saveReviews(updatedReviews);
-            }
-
-            setShowAddComment(false);
-            setSelectedReview(null);
-          }}
+  setShowAddComment(false);
+  setSelectedReview(null);
+}}
 
           onDelete={() => {
             const filtered = reviews.filter(r => r.id !== selectedReview.id);
@@ -168,17 +198,20 @@ export default function Card({ restaurant, onClose }) {
             <View style={styles.handle} />
           </View>
 
-          <View style={styles.cardtop}>
-            <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-              <Text style={styles.closeText}>✕</Text>
-            </TouchableOpacity>
+<View style={styles.cardtop}>
+  <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+    {/* ✕ 按鈕顏色隨主題變換 */}
+    <Text style={[styles.closeText, { color: theme.text }]}>✕</Text> 
+  </TouchableOpacity>
 
-            <View style={styles.titleContainer}>
-              <Text style={styles.title}>
-                {restaurant?.name || ''}
-              </Text>
-            </View>
-          </View>
+  <View style={styles.titleContainer}>
+    {/* 餐廳名稱顏色 */}
+    <Text style={[styles.title, { color: theme.text }]}>
+      {restaurant?.name || ''}
+    </Text>
+  </View>
+</View>
+
           <ScrollView
             contentContainerStyle={[
               styles.scrollContent,
@@ -188,41 +221,39 @@ export default function Card({ restaurant, onClose }) {
           >
 
 
-            <View style={styles.Info}>
-
-              <Text style={styles.types}>
+          <View style={[styles.Info, { backgroundColor: theme.cardInner }]}>
+              <Text style={[styles.types, { color: isDark ? '#AAA' : '#666' }]}>                
                 餐廳類型: {restaurant?.types
                   ?.filter(t => t !== 'restaurant' && t !== 'food' && t !== 'point_of_interest' && t !== 'establishment')
                   .slice(0, 2)
                   .join(' / ') || '無分類'}
               </Text>
 
-              <Text style={styles.address}>
-                {restaurant?.vicinity || restaurant?.formatted_address || ''}
+              <Text style={[styles.address, { color: theme.text }]}>
+                  {restaurant?.vicinity || restaurant?.formatted_address || ''}
               </Text>
 
 
 
               {openingHours ? (
                 openingHours.map((day, index) => (
-                  <Text key={index}> {day}</Text>
-                ))
+                <Text key={index} style={[styles.openingHour, { color: theme.text }]}> {day}</Text>                ))
               ) : (
-                <Text>🕒 無營業時間資料</Text>
-              )}
+                <Text style={[styles.openingHour, { color: theme.text }]}>🕒 無營業時間資料</Text>              )}
             </View>
 
 
-            <Text style={styles.sectionTitle}>-comments-</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>-comments-</Text>
             {restaurantReviews.length === 0 && (
-              <Text style={styles.commentBefore}>您尚未留下評論</Text>
-            )}
+<Text style={[styles.commentBefore, { backgroundColor: theme.cardInner, color: theme.text }]}>
+    您尚未留下評論
+  </Text>            )}
 
 
             {restaurantReviews.map((r) => (
               <TouchableOpacity
                 key={r.id}
-                style={styles.reviewSection}
+                style={[styles.reviewSection, { backgroundColor: theme.cardInner }]}
                 onPress={() => {
                   setSelectedReview(r);
                   setShowAddComment(true);
@@ -245,7 +276,7 @@ export default function Card({ restaurant, onClose }) {
                     />
                   </View>
                 </View>
-                <Text style={styles.reviewText}>{r.text}</Text>
+                <Text style={[styles.reviewText, { color: theme.text }]}>{r.text}</Text>
 
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.reviewImagesRow}>
                   {(r.images || []).map((img, idx) => (
